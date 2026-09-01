@@ -1,0 +1,49 @@
+name: apps-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/**"
+      - "sdks/python/m365/**"
+      - ".github/workflows/apps-ci.yml"
+  pull_request:
+    paths:
+      - "apps/**"
+      - "sdks/python/m365/**"
+      - ".github/workflows/apps-ci.yml"
+
+jobs:
+  m365-workspace-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/m365-workspace/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # The SDK family lives in this repo, not on an index: install it
+      # editable first so the app's dependencies resolve against it.
+      - run: |
+          pip install -e ../../../sdks/python/m365/m365-client \
+            -e ../../../sdks/python/m365/outlook-client \
+            -e ../../../sdks/python/m365/sharepoint-client \
+            -e ../../../sdks/python/m365/langchain-tools
+      - run: pip install -e ".[test]"
+      - run: pytest -q
+
+  m365-workspace-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/m365-workspace/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

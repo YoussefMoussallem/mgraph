@@ -1,0 +1,73 @@
+# Builds and deploys the whole documentation site to GitHub Pages:
+#
+#   /            platform docs (root mkdocs.yml over docs/ — architecture,
+#                services, scaffolds, contributing)
+#   /python/     Python SDK docs   (sdks/python/mkdocs.yml)
+#   /typescript/ TypeScript SDK docs (sdks/typescript/mkdocs.yml)
+#
+# The platform build must run first: mkdocs cleans its --site-dir, so the
+# sub-sites are built into _site/python and _site/typescript afterwards.
+name: docs-site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "CONTRIBUTING.md"
+      - "scaffolds/README.md"
+      - "scaffolds/*/README.md"
+      - "sdks/python/docs/**"
+      - "sdks/python/mkdocs.yml"
+      - "sdks/typescript/docs/**"
+      - "sdks/typescript/mkdocs.yml"
+      - ".github/workflows/docs-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  # Single Pages deployer for this repo — do not add a second workflow
+  # that also uses actions/deploy-pages without sharing this group.
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build platform docs (site root)
+        run: |
+          pip install -r docs/requirements.txt
+          mkdocs build --strict --site-dir _site
+      - name: Build Python SDK docs
+        run: |
+          pip install -r docs/requirements.txt
+          mkdocs build --strict --site-dir ../../_site/python
+        working-directory: sdks/python
+      - name: Build TypeScript SDK docs
+        run: |
+          pip install -r docs/requirements.txt
+          mkdocs build --strict --site-dir ../../_site/typescript
+        working-directory: sdks/typescript
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

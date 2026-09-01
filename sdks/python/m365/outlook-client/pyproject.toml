@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "outlook-client"
+version = "0.1.0"
+description = "Typed Outlook client over Microsoft Graph (mail, attachments, calendar, contacts), built on m365-client"
+requires-python = ">=3.11"
+dependencies = [
+    # Owns everything this package does not: token acquisition (on-behalf-of
+    # and app-only), credential caching, the configured Graph client, the
+    # error taxonomy, and next-link paging. Brings msgraph-sdk transitively,
+    # which is where the typed request builders used here come from.
+    "m365-client>=0.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/outlook_client"]

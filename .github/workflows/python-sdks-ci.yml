@@ -1,0 +1,81 @@
+name: sdks-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sdks/python/**"
+      - "sdks/typescript/**"
+      - ".github/workflows/python-sdks-ci.yml"
+      - ".github/workflows/python-sdks-release.yml"
+      - ".github/workflows/typescript-sdks-ci.yml"
+      - ".github/workflows/typescript-sdks-release.yml"
+  pull_request:
+    paths:
+      - "sdks/python/**"
+      - "sdks/typescript/**"
+      - ".github/workflows/python-sdks-ci.yml"
+      - ".github/workflows/python-sdks-release.yml"
+      - ".github/workflows/typescript-sdks-ci.yml"
+      - ".github/workflows/typescript-sdks-release.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      # One pip invocation so the local editable m365-client satisfies the
+      # outlook-client / sharepoint-client dependency on it (it is not on an
+      # index), the same way llm-provider resolves langfuse-client. The
+      # Microsoft 365 packages ship no test suite; installing them here still
+      # proves they build and every dependency resolves on each interpreter.
+      - run: |
+          pip install -e ./sdks/python/langfuse-client \
+            -e "./sdks/python/llm-provider[dev]" \
+            -e ./sdks/python/m365/m365-client \
+            -e ./sdks/python/m365/outlook-client \
+            -e ./sdks/python/m365/sharepoint-client \
+            -e ./sdks/python/m365/langchain-tools
+      - run: |
+          pytest sdks/python/langfuse-client/tests \
+            sdks/python/llm-provider/tests -q
+      - name: Import the Microsoft 365 packages
+        run: |
+          python -c "import m365_client, m365_client.env, outlook_client, sharepoint_client, m365_langchain_tools"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check sdks/python
+
+  typescript:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/typescript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.4 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build

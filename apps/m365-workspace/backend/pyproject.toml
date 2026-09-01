@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "m365-workspace-backend"
+version = "0.1.0"
+description = "M365 Workspace backend — Outlook, SharePoint and an agent over the Microsoft 365 SDK family"
+requires-python = ">=3.11"
+dependencies = [
+    # The backend scaffold this app was started from.
+    "certifi>=2024.8.30",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    # >=2.9: issuer= accepts a list, needed for the v1 + v2 Entra issuers.
+    "PyJWT[crypto]>=2.9",
+    # Multipart bodies: attachment and file uploads.
+    "python-multipart>=0.0.9",
+    # The Microsoft 365 SDK family — what this app exists to exercise.
+    "m365-client>=0.1.0",
+    "outlook-client>=0.1.0",
+    "sharepoint-client>=0.1.0",
+    "m365-langchain-tools>=0.1.0",
+    # The assistant: LangChain tool calling over any OpenAI-compatible endpoint.
+    "langchain-core>=0.3",
+    "langchain-openai>=0.3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+# msgraph's generated builders warn about their own deprecated per-builder
+# configuration classes at import time; this app only uses the generic
+# RequestConfiguration the warning recommends.
+filterwarnings = ["ignore:This class is deprecated:DeprecationWarning"]

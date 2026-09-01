@@ -1,0 +1,57 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "separate-pull-requests": true,
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "Features"
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes"
+    },
+    {
+      "type": "chore",
+      "section": "Miscellaneous",
+      "hidden": true
+    }
+  ],
+  "packages": {
+    "sdks/typescript/packages/langfuse-client": {
+      "component": "langfuse-client",
+      "release-type": "node",
+      "include-component-in-tag": true,
+      "extra-files": [
+        "sdks/python/langfuse-client/pyproject.toml"
+      ]
+    },
+    "sdks/typescript/packages/llm-provider": {
+      "component": "llm-provider",
+      "release-type": "node",
+      "include-component-in-tag": true,
+      "extra-files": [
+        "sdks/python/llm-provider/pyproject.toml"
+      ]
+    },
+    "sdks/python/m365/m365-client": {
+      "component": "m365-client",
+      "release-type": "python",
+      "include-component-in-tag": true
+    },
+    "sdks/python/m365/outlook-client": {
+      "component": "outlook-client",
+      "release-type": "python",
+      "include-component-in-tag": true
+    },
+    "sdks/python/m365/sharepoint-client": {
+      "component": "sharepoint-client",
+      "release-type": "python",
+      "include-component-in-tag": true
+    },
+    "sdks/python/m365/langchain-tools": {
+      "component": "m365-langchain-tools",
+      "release-type": "python",
+      "include-component-in-tag": true
+    }
+  }
+}

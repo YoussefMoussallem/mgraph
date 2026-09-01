@@ -1,0 +1,35 @@
+name: services-ci
+
+# Lint for everything under services/. There is currently no service with
+# runtime code -- Outlook and SharePoint ship as SDKs (sdks/python/m365/,
+# built and linted by python-sdks-ci.yml) and the remaining service folders are
+# README-only stubs.
+#
+# When the first service with tests lands, add a job for it here. Prefer one
+# job per service over one job installing several: every service ships its
+# code as a top-level ``app`` package, so two editable installs in the same
+# environment shadow each other and the second suite imports the first
+# service's modules. Services are deployed applications, not libraries, so
+# test them on the one interpreter they run on rather than a version matrix.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/**"
+      - ".github/workflows/services-ci.yml"
+  pull_request:
+    paths:
+      - "services/**"
+      - ".github/workflows/services-ci.yml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check services

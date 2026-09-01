@@ -1,0 +1,14 @@
+# TypeScript SDK CI runs in the `sdks-ci` job (`python-sdks-ci.yml`) so pull
+# requests can execute it before this workflow file lands on `main`. This
+# workflow exists for manual re-runs after merge.
+name: typescript-sdks-ci
+
+on:
+  workflow_dispatch:
+
+jobs:
+  delegate:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Run sdks-ci (python-sdks-ci.yml) — the typescript job covers sdks/typescript."

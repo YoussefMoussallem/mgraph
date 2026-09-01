@@ -1,0 +1,44 @@
+name: scaffolds-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scaffolds/**"
+      - ".github/workflows/scaffolds-ci.yml"
+  pull_request:
+    paths:
+      - "scaffolds/**"
+      - ".github/workflows/scaffolds-ci.yml"
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scaffolds/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scaffolds/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # m365-client is a sibling package in this repo, not on an index, so it
+      # is installed editable first and the scaffold's m365 extra resolves
+      # against it.
+      - run: pip install -e ../../sdks/python/m365/m365-client
+      - run: pip install -e ".[test,m365]"
+      - run: pytest -q

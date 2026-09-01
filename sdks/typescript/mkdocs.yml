@@ -1,0 +1,51 @@
+site_name: AI Labs TypeScript GenAI SDKs
+site_description: Provider-agnostic LLM adapter and Langfuse tracing helpers (TypeScript)
+site_url: https://pwc-me-adv-strategyand.github.io/infra-platform-services/typescript/
+repo_url: https://github.com/pwc-me-adv-strategyand/infra-platform-services
+repo_name: infra-platform-services
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Overview: index.md
+  - Using in an application: using-in-an-app.md
+  - Installation: installation.md
+  - Test application: app-testing.md
+  - llm-provider:
+      - Getting started: llm-provider/index.md
+      - Streaming & events: llm-provider/streaming.md
+      - Prompt caching: llm-provider/caching.md
+      - Utility calls & images: llm-provider/utilities.md
+      - Errors & retries: llm-provider/errors.md
+  - langfuse-client:
+      - Getting started: langfuse-client/index.md
+      - Lifecycle & guarantees: langfuse-client/lifecycle.md
+      - Corporate proxy / private CA: langfuse-client/corporate-network.md
+  - Deployment guide: deployment.md

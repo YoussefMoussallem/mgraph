@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "langfuse-client"
+version = "0.5.0"
+description = "Langfuse initialisation and tracing helpers"
+requires-python = ">=3.11"
+dependencies = [
+    "langfuse>=4.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/langfuse_client"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

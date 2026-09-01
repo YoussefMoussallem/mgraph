@@ -1,0 +1,68 @@
+site_name: AI Labs Shared Services
+site_description: Architecture standards, service contracts, scaffolds, and SDKs for AI Labs platforms
+site_url: https://pwc-me-adv-strategyand.github.io/infra-platform-services/
+repo_url: https://github.com/pwc-me-adv-strategyand/infra-platform-services
+repo_name: infra-platform-services
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+plugins:
+  - search
+  # Scaffold pages and the Contributing page are single-sourced: the
+  # site includes the scaffold READMEs and root CONTRIBUTING.md at build
+  # time instead of keeping a duplicate copy under docs/.
+  - include-markdown
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+      # GitHub-compatible heading slugs (keeps double hyphens from "—"),
+      # so anchors in cross-doc links work both on GitHub and on the site.
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Home: README.md
+  - Architecture:
+      - "Foundation services & sharing framework": architecture/foundation-services-and-sharing-framework.md
+  - Services:
+      - "SS-01 — Identity & SSO": services/SS-01-identity.md
+      - "SS-02 — User Directory": services/SS-02-directory.md
+      - "SS-03 — GenAI proxy": services/SS-03-genai.md
+      - "Universal Sharing Framework": services/SS-sharing-framework.md
+      - "SS-05 — Knowledge Base / RAG": services/SS-05-knowledge-base.md
+      - "SS-12 — File / Blob Storage": services/SS-12-storage.md
+  - Scaffolds:
+      - Overview: scaffolds/index.md
+      - "Frontend (React + Vite)": scaffolds/frontend.md
+      - "Backend (FastAPI)": scaffolds/backend.md
+  - SDKs:
+      - Python SDKs (GenAI + Microsoft 365): https://pwc-me-adv-strategyand.github.io/infra-platform-services/python/
+      - TypeScript GenAI SDKs: https://pwc-me-adv-strategyand.github.io/infra-platform-services/typescript/
+  - Contributing: contributing.md

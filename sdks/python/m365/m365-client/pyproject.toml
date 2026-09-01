@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "m365-client"
+version = "0.1.0"
+description = "Microsoft 365 authentication and Graph client foundation for AI Labs services"
+requires-python = ">=3.11"
+dependencies = [
+    # Official Microsoft Graph SDK. Chosen over a hand-rolled httpx client so
+    # consuming services get typed access to the whole Graph surface (this
+    # package deliberately ships no workload helpers), and so Graph's own
+    # middleware -- Retry-After handling, redirects, telemetry -- comes for
+    # free. Pulls ~10 transitive Kiota packages; see README "Dependencies".
+    "msgraph-sdk>=1.61.0",
+    # Credential flows (on-behalf-of, client secret, certificate). Only the
+    # async variants under ``azure.identity.aio`` are used -- the synchronous
+    # classes block the event loop (CONTRIBUTING section 3).
+    "azure-identity>=1.25.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/m365_client"]

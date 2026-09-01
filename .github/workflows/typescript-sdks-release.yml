@@ -1,0 +1,175 @@
+name: typescript-sdks-release
+
+# Same tags as python-sdks-release — one tag publishes the matching Python
+# wheel and npm package (lockstep versioning per package name).
+#
+# Environment "jfrog" secrets:
+#   JFROG_USERNAME, JFROG_TOKEN
+#   JFROG_NPM_URL — e.g. https://artifacts-central.pwc.com/artifactory/api/npm/npmdev-c0war-dvj-npm-loc/
+#
+# Publish @genai-sdk/langfuse-client before @genai-sdk/llm-provider when
+# releasing both.
+on:
+  push:
+    tags:
+      - "llm-provider-v*"
+      - "langfuse-client-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build/publish (e.g. langfuse-client-v0.5.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: sdks/typescript
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.match.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'refs/heads/main' || github.ref }}
+      - name: Resolve package from tag
+        id: pkg
+        run: |
+          REF="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          case "$REF" in
+            llm-provider-v*)    echo "dir=packages/llm-provider" >> "$GITHUB_OUTPUT" ;;
+            langfuse-client-v*) echo "dir=packages/langfuse-client" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unrecognised tag $REF" >&2; exit 1 ;;
+          esac
+      - id: match
+        working-directory: sdks/typescript
+        run: |
+          REF="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          TAG_VER="${REF#*-v}"
+          PKG_VER="$(node -p "require('./${{ steps.pkg.outputs.dir }}/package.json').version")"
+          if [ "$TAG_VER" = "$PKG_VER" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${TAG_VER} matches package.json (${PKG_VER})"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: tag v${TAG_VER} != package.json (${PKG_VER})"
+          fi
+
+  build-and-release:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'refs/heads/main' || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.4 --activate
+      - name: Resolve package from tag
+        id: pkg
+        run: |
+          REF="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          case "$REF" in
+            llm-provider-v*)
+              echo "filter=@genai-sdk/llm-provider" >> "$GITHUB_OUTPUT"
+              echo "dir=packages/llm-provider" >> "$GITHUB_OUTPUT"
+              ;;
+            langfuse-client-v*)
+              echo "filter=@genai-sdk/langfuse-client" >> "$GITHUB_OUTPUT"
+              echo "dir=packages/langfuse-client" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unrecognised tag $REF" >&2
+              exit 1
+              ;;
+          esac
+      - name: Tag version matches package.json
+        run: |
+          REF="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          TAG_VER="${REF#*-v}"
+          PKG_VER="$(node -p "require('./${{ steps.pkg.outputs.dir }}/package.json').version")"
+          if [ "$TAG_VER" != "$PKG_VER" ]; then
+            echo "::error::Tag version v${TAG_VER} does not match ${{ steps.pkg.outputs.dir }}/package.json (${PKG_VER})"
+            exit 1
+          fi
+      - run: pnpm install --frozen-lockfile
+      - name: Build package and workspace dependencies
+        run: pnpm --filter "${{ steps.pkg.outputs.filter }}..." run build
+      - name: Pack npm tarball
+        run: |
+          mkdir -p packs
+          (cd "${{ steps.pkg.outputs.dir }}" && pnpm pack --pack-destination "$(pwd)/../../packs")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-dist
+          path: sdks/typescript/packs/*.tgz
+          if-no-files-found: error
+      - name: Create GitHub Release
+        working-directory: sdks/typescript
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" 2>/dev/null \
+            || gh release create "${RELEASE_TAG}" \
+              packs/*.tgz \
+              --repo "${GITHUB_REPOSITORY}" \
+              --generate-notes \
+              --title "${RELEASE_TAG}"
+
+  publish-jfrog:
+    needs: [gate, build-and-release]
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    environment: jfrog
+    # Job-level default is sdks/typescript; artifacts download to repo root.
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-dist
+      - name: Configure npm for Artifactory
+        env:
+          JFROG_NPM_URL: ${{ secrets.JFROG_NPM_URL }}
+          JFROG_TOKEN: ${{ secrets.JFROG_TOKEN }}
+        run: |
+          registry="${JFROG_NPM_URL%/}/"
+          host_path="${registry#https://}"
+          {
+            echo "@genai-sdk:registry=${registry}"
+            echo "//${host_path}:_authToken=${JFROG_TOKEN}"
+            echo "always-auth=true"
+          } >> "$HOME/.npmrc"
+      - name: Publish to Artifactory npm
+        run: |
+          shopt -s nullglob
+          # upload-artifact with a *.tgz glob flattens paths — tarball is at workspace root
+          tggs=(*.tgz)
+          if [ "${#tggs[@]}" -eq 0 ]; then
+            tggs=(sdks/typescript/packs/*.tgz)
+          fi
+          if [ "${#tggs[@]}" -eq 0 ]; then
+            echo "::error::No .tgz found after artifact download"
+            ls -la
+            exit 1
+          fi
+          for tgz in "${tggs[@]}"; do
+            echo "Publishing ${tgz}"
+            npm publish "$tgz"
+          done

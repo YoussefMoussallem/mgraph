@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "m365-langchain-tools"
+version = "0.1.0"
+description = "LangChain agent tools for Outlook and SharePoint, on the M365 SDKs"
+requires-python = ">=3.11"
+dependencies = [
+    # The Graph foundation and the two workload SDKs these tools adapt. All
+    # Graph knowledge stays there; this package owns only the LLM-facing
+    # contract (names, routing descriptions, schemas, bounded results).
+    "m365-client>=0.1.0",
+    "outlook-client>=0.1.0",
+    "sharepoint-client>=0.1.0",
+    # BaseTool and the pydantic schema bridge. Wide floor on purpose: agent
+    # hosts pin their own LangChain line and this package uses only the
+    # stable BaseTool surface.
+    "langchain-core>=0.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/m365_langchain_tools"]

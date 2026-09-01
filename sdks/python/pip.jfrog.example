@@ -1,0 +1,23 @@
+# Example pip configuration for the org Artifactory PyPI feed.
+# Copy relevant lines into pip.conf / PIP_* env vars, or use in CI.
+#
+# Feed (replace with your platform team's repo id if different):
+#   pypidev-d4j0u-4qu-pyp-loc
+#
+# pip install index URL MUST end with /simple (unlike twine upload URL).
+# Do not commit real tokens. Use JFROG_USERNAME + JFROG_TOKEN from a vault or GitHub environment.
+
+# --- Linux / macOS: ~/.pip/pip.conf or /etc/pip.conf ---
+# [global]
+# index-url = https://artifacts-central.pwc.com/artifactory/api/pypi/pypidev-d4j0u-4qu-pyp-loc/simple
+# extra-index-url = https://pypi.org/simple
+#
+# [install]
+# trusted-host = artifacts-central.pwc.com
+
+# --- Authenticated index (local dev; prefer netrc or CI secrets over committing) ---
+# export JFROG_USERNAME="your-artifactory-user"
+# export JFROG_TOKEN="your-identity-token"
+# export PIP_INDEX_URL="https://${JFROG_USERNAME}:${JFROG_TOKEN}@artifacts-central.pwc.com/artifactory/api/pypi/pypidev-d4j0u-4qu-pyp-loc/simple"
+# export PIP_EXTRA_INDEX_URL="https://pypi.org/simple"
+# pip install "llm-provider==0.4.0"

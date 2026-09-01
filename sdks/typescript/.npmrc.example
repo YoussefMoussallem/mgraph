@@ -1,0 +1,10 @@
+# Scoped @genai-sdk packages from JFrog (copy to ~/.npmrc or project .npmrc).
+# Generate a token in Artifactory → Set Up npm client → Edit .npmrc (Scoped), @genai-sdk scope.
+#
+# Do not commit real tokens. Use env var locally or GitHub environment jfrog in CI.
+
+@genai-sdk:registry=https://artifacts-central.pwc.com/artifactory/api/npm/npmdev-c0war-dvj-npm-loc/
+//artifacts-central.pwc.com/artifactory/api/npm/npmdev-c0war-dvj-npm-loc/:_authToken=${JFROG_TOKEN}
+//artifacts-central.pwc.com/artifactory/api/npm/npmdev-c0war-dvj-npm-loc/:always-auth=true
+
+# Public deps (@langfuse/*, openai, etc.) still resolve from the default registry (npmjs).

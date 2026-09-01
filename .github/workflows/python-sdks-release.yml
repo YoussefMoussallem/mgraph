@@ -1,0 +1,86 @@
+name: python-sdks-release
+
+# Tag langfuse-client-v0.5.0 / llm-provider-v0.4.0 / m365-client-v0.1.0 /
+# outlook-client-v0.1.0 / sharepoint-client-v0.1.0 (etc.) to build, GitHub
+# Release, and publish to Artifactory PyPI.
+#
+# Environment "jfrog" secrets:
+#   JFROG_USERNAME, JFROG_TOKEN
+#   JFROG_PYPI_URL — twine upload URL (NOT pip index-url): no /simple, no credentials, e.g.
+#     https://artifacts-central.pwc.com/artifactory/api/pypi/pypidev-d4j0u-4qu-pyp-loc/
+#
+# Publish langfuse-client before llm-provider when releasing both, and
+# m365-client before outlook-client / sharepoint-client, and those before
+# m365-langchain-tools (each layer depends on the previous).
+on:
+  push:
+    tags:
+      - "llm-provider-v*"
+      - "langfuse-client-v*"
+      - "m365-client-v*"
+      - "outlook-client-v*"
+      - "sharepoint-client-v*"
+      - "m365-langchain-tools-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - name: Resolve package dir from tag
+        id: pkg
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            llm-provider-v*)       echo "dir=sdks/python/llm-provider" >> "$GITHUB_OUTPUT" ;;
+            langfuse-client-v*)    echo "dir=sdks/python/langfuse-client" >> "$GITHUB_OUTPUT" ;;
+            m365-client-v*)        echo "dir=sdks/python/m365/m365-client" >> "$GITHUB_OUTPUT" ;;
+            outlook-client-v*)     echo "dir=sdks/python/m365/outlook-client" >> "$GITHUB_OUTPUT" ;;
+            sharepoint-client-v*)  echo "dir=sdks/python/m365/sharepoint-client" >> "$GITHUB_OUTPUT" ;;
+            m365-langchain-tools-v*) echo "dir=sdks/python/m365/langchain-tools" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unrecognised tag ${GITHUB_REF_NAME}" >&2; exit 1 ;;
+          esac
+      - run: python -m build ${{ steps.pkg.outputs.dir }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: ${{ steps.pkg.outputs.dir }}/dist/*
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" 2>/dev/null \
+            || gh release create "${GITHUB_REF_NAME}" \
+              "${{ steps.pkg.outputs.dir }}"/dist/* \
+              --repo "${GITHUB_REPOSITORY}" \
+              --generate-notes \
+              --title "${GITHUB_REF_NAME}"
+
+  publish-jfrog:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    environment: jfrog
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - run: pip install twine
+      - name: Publish to Artifactory PyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.JFROG_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.JFROG_TOKEN }}
+          JFROG_PYPI_URL: ${{ secrets.JFROG_PYPI_URL }}
+        run: |
+          # pip uses .../simple; twine must target the repo API root (twine adds /simple itself).
+          url="${JFROG_PYPI_URL%/}"
+          url="${url%/simple}"
+          export TWINE_REPOSITORY_URL="${url}/"
+          echo "Uploading to ${TWINE_REPOSITORY_URL}"
+          twine upload --non-interactive dist/*

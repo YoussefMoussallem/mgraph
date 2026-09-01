@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/*
+ * ── Modular theme ──────────────────────────────────────────
+ * Swap --color-brand to re-skin the entire app.
+ */
+
+@theme {
+  --color-brand: #8E1E1E;
+  --color-brand-light: #a52828;
+  --color-brand-dim: #8E1E1E0a;
+  --color-brand-glow: #8E1E1E18;
+
+  --font-heading: "Poppins", sans-serif;
+  --font-body: "Funnel Sans", sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  color: #111111;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@genai-sdk/llm-provider",
+  "version": "0.4.0",
+  "description": "Async provider-agnostic LLM adapter built on the OpenAI Node SDK: streaming (Responses and Chat Completions), tool use, vision, image generation, prompt caching, normalized usage accounting, and a provider-agnostic error hierarchy.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@genai-sdk/langfuse-client": "workspace:*",
+    "openai": "^6.49.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.9.3"
+  }
+}

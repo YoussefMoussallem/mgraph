@@ -1,0 +1,10 @@
+node_modules/
+# dist/ is COMMITTED for packages/* — this monorepo is consumed as a git
+# dependency (github:...#path:), and pnpm prepares git deps with npm, which
+# cannot resolve the workspace:* dependency between the two packages. Shipping
+# dist removes build-on-install entirely. Rebuild (pnpm build) before
+# committing source changes.
+*.tsbuildinfo
+.env
+.DS_Store
+coverage/

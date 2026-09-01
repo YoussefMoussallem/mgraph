@@ -1,0 +1,27 @@
+name: release-please
+
+# Opens/updates release PRs that bump SDK versions (Python pyproject + TS package.json
+# stay in lockstep per component). Merging the release PR creates tags like
+# langfuse-client-v0.5.1, which trigger python-sdks-release and typescript-sdks-release.
+#
+# Commit messages on main should use conventional commits (feat:, fix:, etc.) so
+# release-please can infer semver bumps.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
